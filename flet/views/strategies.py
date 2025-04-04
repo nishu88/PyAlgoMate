@@ -168,7 +168,7 @@ class StrategyCard(ft.Card):
         self.openPositions.value = f'Open Pos (B|S): {len(self.strategy.getActivePositions())} ({activeBuyPositions}|{activeSellPositions})'
         self.closedPositions.value = f'Closed Pos: {len(self.strategy.getClosedPositions())}'
         self.balanceAvailable.value = f'Balance Available: ₹ {self.strategy.getBroker().getCash()}'
-        self.update()
+        self.page.update()
 
     def onChartButtonClicked(self, e):
         base64Img = base64.b64encode(
@@ -249,7 +249,8 @@ class StrategyCard(ft.Card):
 
 class StrategiesView(ft.View):
     def __init__(self, page: ft.Page, feed: BaseBarFeed, strategies: List[BaseOptionsGreeksStrategy]):
-        super().__init__(route="/")
+        super().__init__()
+        self.route = "/"
         self.padding = ft.padding.all(10)
         self.scroll = ft.ScrollMode.HIDDEN
         self.page = page
@@ -258,7 +259,7 @@ class StrategiesView(ft.View):
 
         self.totalMtm = ft.Text(
             '₹ 0', size=25)
-        
+
         totalMtmRow = ft.Container(
             ft.Column([
                 ft.Container(ft.Text('Total MTM', size=15, weight=ft.FontWeight.BOLD,
@@ -278,7 +279,7 @@ class StrategiesView(ft.View):
                                       icon_size=40,
                                       icon_color='white',
                                       on_click=self.onTotalMTMChartButtonClicked,tooltip="MTM of all Strategies running")
-                        ])   
+                        ])
                     ]),
                     padding=ft.padding.only(
                         top=35, right=10, bottom=10)
@@ -332,6 +333,8 @@ class StrategiesView(ft.View):
                 scroll=ft.ScrollMode.HIDDEN
             )
         ]
+        self.page.update()
+
     def onTotalMTMChartButtonClicked(self, e):
         pnlDf = pd.DataFrame()
         pnl = int(0)
@@ -341,7 +344,7 @@ class StrategiesView(ft.View):
             tempPnlDf = strategy.getPnLs()
             tempPnlDf['strategy'] = strategyCard.strategy.strategyName
             pnlDf = pd.concat([pnlDf, tempPnlDf], ignore_index=True)
-            
+
         pnlDf.index =pnlDf['Date/Time']
         cummPnlDf = pnlDf['PnL'].resample('1T').agg({'PnL':'sum'})
         cummPnlDf.reset_index(inplace=True)
@@ -350,9 +353,6 @@ class StrategiesView(ft.View):
         color = np.where(values < 0, 'loss', 'profit')
         fig = px.area(cummPnlDf, x="Date/Time", y=values, title=f"Total MTM | Current PnL:  ₹{round(pnl, 2)}",
                         color=color, color_discrete_map={'loss': 'orangered', 'profit': 'lightgreen'})
-        fig.update_layout(
-            title_x=0.5, title_xanchor='center', yaxis_title='PnL')
-        
         fig.add_traces(
             [
                 go.Scatter(x=pnlDf.query(f'strategy=="{strategy}"')["Date/Time"], y=pnlDf.query(f'strategy=="{strategy}"')['PnL'],
@@ -360,6 +360,9 @@ class StrategiesView(ft.View):
                                 name=f'{strategy}') for strategy in pnlDf.strategy.unique()
             ]
         )
+
+        fig.update_layout(
+            title_x=0.5, title_xanchor='center', yaxis_title='PnL')
         base64Img = base64.b64encode(
              fig.to_image(format='png')).decode('utf-8')
         dlg = ft.AlertDialog(
@@ -370,7 +373,7 @@ class StrategiesView(ft.View):
         self.page.dialog = dlg
         dlg.open = True
         self.page.update()
-        
+
     def update(self):
         for strategyCard in self.strategyCards:
             strategyCard.updateStrategy()
@@ -380,5 +383,7 @@ class StrategiesView(ft.View):
         self.totalMtm.value = f'₹ {totalMtm:.2f}'
         self.totalMtm.color = "green" if totalMtm >= 0 else "red"
         self.feedIcon.color = "green" if self.feed.isDataFeedAlive() else "red"
-        self.feedText.value = f'Quote       : {self.feed.getLastUpdatedDateTime()}\nReceived  : {self.feed.getLastReceivedDateTime()}\nBars        : {self.feed.getNextBarsDateTime()}'
-        super().update()
+        self.feedText.value = (f'Quote       : {self.feed.getLastUpdatedDateTime()}\nReceived  : '
+                               f'{self.feed.getLastReceivedDateTime()}\nBars        '
+                               f': {self.feed.getNextBarsDateTime()}')
+        self.page.update()

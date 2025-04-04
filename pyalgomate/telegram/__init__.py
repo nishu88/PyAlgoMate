@@ -172,7 +172,7 @@ class TelegramBot:
                 retry_after_seconds = e.retry_after
                 self.current_sleep_interval = max(
                     retry_after_seconds, self.current_sleep_interval)
-                logger.exception(
+                logger.warning(
                     f"Rate limit exceeded. Sleeping for {retry_after_seconds}. Error: {e}")
                 await asyncio.sleep(retry_after_seconds)
                 await failed_messages.put(message)
@@ -371,20 +371,8 @@ class TelegramBot:
 
 
 def main() -> None:
-    bot = TelegramBot("5972504197:AAH7l8x1DUHMw6wfoExQknY7IuuKnzV5cjU", "@pyalgomate_private")
+    bot = TelegramBot("botId", "channelId")
     bot.sendMessage({"message": "Hello, world1!", "messageThreadId": "2"})
-    bot.sendMessage({"message": "Hello, world2!", "messageThreadId": "3"})
-    bot.sendMessage({"message": "Hello, world3!", "messageThreadId": "6"})
-    bot.sendMessage({"message": "Hello, world4!", "messageThreadId": "8"})
-    bot.sendMessage("Message1")
-    bot.sendMessage("Message2")
-    bot.sendMessage("Message3")
-    bot.sendMessage("Message4")
-    bot.sendMessage("Message5")
-    bot.sendMessage("Message6")
-    bot.sendMessage("Message7")
-    bot.sendMessage("Message8")
-    bot.sendMessage("Message9")
 
     def handle_interrupt(signum, frame):
         logger.info("Ctrl+C received. Stopping the bot...")
